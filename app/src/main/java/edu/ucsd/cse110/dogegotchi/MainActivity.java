@@ -18,6 +18,7 @@ import java.util.Map;
 import edu.ucsd.cse110.dogegotchi.daynightcycle.DayNightCycleMediator;
 import edu.ucsd.cse110.dogegotchi.doge.Doge;
 import edu.ucsd.cse110.dogegotchi.doge.DogeView;
+import edu.ucsd.cse110.dogegotchi.doge.IDogeObserver;
 import edu.ucsd.cse110.dogegotchi.sprite.Coord;
 import edu.ucsd.cse110.dogegotchi.ticker.AsyncTaskTicker;
 import edu.ucsd.cse110.dogegotchi.ticker.ITicker;
@@ -39,6 +40,8 @@ public class MainActivity extends Activity {
     private MediaPlayer dayPlayer;
 
     private MediaPlayer nightPlayer;
+
+    private MenuPresenter menuPresenter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -65,13 +68,13 @@ public class MainActivity extends Activity {
         ticker.register(this.dayNightCycleMediator);
 
         /**
-         * TODO: Exercise 1 -- Observer
          *
          * - You'll have to make doge's state change from Happy/Sad at night to Sleeping.
          * - In the morning, doge should go to happy state. See write-up.
          */
         // create the almighty doge
         createDoge(ticksPerPeriod);
+        dayNightCycleMediator.register(this.doge);
         ticker.register(this.doge);
 
         final GameView gameView = this.findViewById(R.id.GameCanvasView);
@@ -94,11 +97,12 @@ public class MainActivity extends Activity {
          *
          *      3. Feed doge and update their state accordingly.
          */
-        final View foodMenu = this.findViewById(R.id.FoodMenuView);
+        View foodMenu = this.findViewById(R.id.FoodMenuView);
         final ImageButton hamButton       = foodMenu.findViewById(R.id.HamButton),
                           steakButton     = foodMenu.findViewById(R.id.SteakButton),
                           turkeyLegButton = foodMenu.findViewById(R.id.TurkeyLegButton);
-        // hm... should prob do something with this
+        this.menuPresenter = new MenuPresenter(this.doge, foodMenu);
+        this.doge.register(menuPresenter);
 
         /**
          * TODO: Exercise 3 -- Strategy & Factory
@@ -158,25 +162,26 @@ public class MainActivity extends Activity {
         Map<Doge.State, Coord > stateCoords  = new HashMap<>();
 
         // Setup views and coords per state.
-        /**
-         * TODO: Set up {@link Doge.State.SAD} and {@link Doge.State.EATING}. Be sure to
-         *       go to res/values/doge.xml and enter {x,y} coordinate values there as we
-         *       did for you for HAPPY and SLEEPING states.
-         */
         stateBitmaps.put(Doge.State.HAPPY,
                          BitmapFactory.decodeResource(getResources(), R.drawable.happy_2x));
         stateCoords.put(Doge.State.HAPPY,
                         new Coord(getResources().getInteger(R.integer.happy_x),
                                   getResources().getInteger(R.integer.happy_y)));
-
-        // TODO: Exercise 1 - set up sprite and coords for SAD state.
+        stateBitmaps.put(Doge.State.SAD,
+                BitmapFactory.decodeResource(getResources(), R.drawable.sad_2x));
+        stateCoords.put(Doge.State.SAD,
+                new Coord(getResources().getInteger(R.integer.sad_x),
+                        getResources().getInteger(R.integer.sad_y)));
         stateBitmaps.put(Doge.State.SLEEPING,
                          BitmapFactory.decodeResource(getResources(), R.drawable.sleeping_2x));
         stateCoords.put(Doge.State.SLEEPING,
                         new Coord(getResources().getInteger(R.integer.sleeping_x),
                                   getResources().getInteger(R.integer.sleeping_y)));
-
-        // TODO: Exercise 2 - Set up sprite and coords for EATING state.
+        stateBitmaps.put(Doge.State.EATING,
+                BitmapFactory.decodeResource(getResources(), R.drawable.eating_2x));
+        stateCoords.put(Doge.State.EATING,
+                new Coord(getResources().getInteger(R.integer.eating_x),
+                        getResources().getInteger(R.integer.eating_y)));
         // TODO: Exercise 3 - You may need to create the Factory of Strategies here
         this.dogeView = new DogeView(this, Doge.State.HAPPY, stateBitmaps, stateCoords);
 

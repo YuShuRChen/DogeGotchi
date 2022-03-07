@@ -6,18 +6,19 @@ import com.google.common.base.Preconditions;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Random;
 
+import edu.ucsd.cse110.dogegotchi.daynightcycle.IDayNightCycleObserver;
 import edu.ucsd.cse110.dogegotchi.observer.ISubject;
 import edu.ucsd.cse110.dogegotchi.ticker.ITickerObserver;
 
 /**
  * Logic for our friendly, sophisticated doge.
  *
- * TODO: Exercise 1 -- add support for {@link State#SLEEPING}.
  *
  * TODO: Exercise 2 -- enable {@link State#SAD} mood, and add support for {@link State#EATING} behavior.
  */
-public class Doge implements ISubject<IDogeObserver>, ITickerObserver {
+public class Doge implements IDayNightCycleObserver, ISubject<IDogeObserver>, ITickerObserver {
     /**
      * Current number of ticks. Reset after every potential mood swing.
      */
@@ -37,6 +38,10 @@ public class Doge implements ISubject<IDogeObserver>, ITickerObserver {
      * State of doge.
      */
     State state;
+
+    Random rand;
+
+    int eatTicks;
 
     private Collection<IDogeObserver> observers;
 
@@ -60,6 +65,9 @@ public class Doge implements ISubject<IDogeObserver>, ITickerObserver {
                 "Creating Doge with initial state %s, with mood swing prob %.2f"
                 + "and num ticks before each swing attempt %d",
                 this.state, this.moodSwingProbability, this.numTicksBeforeMoodSwing));
+
+        rand = new Random();
+        eatTicks = 0;
     }
 
     @Override
@@ -71,15 +79,26 @@ public class Doge implements ISubject<IDogeObserver>, ITickerObserver {
             tryRandomMoodSwing();
             this.numTicks = 0;
         }
+        if (this.state == State.EATING) {
+            if (eatTicks == 0) {
+                eatTicks++;
+            }
+            else {
+                setState(State.HAPPY);
+                eatTicks = 0;
+            }
+        }
     }
 
     /**
-     * TODO: Exercise 1 -- Fill in this method to randomly make doge sad with probability {@link #moodSwingProbability}.
-     *
      * **Strictly follow** the Finite State Machine in the write-up.
      */
     private void tryRandomMoodSwing() {
-        // TODO: Exercise 1 -- Implement this method...
+        if (state == State.HAPPY) {
+            if (rand.nextDouble() < moodSwingProbability) {
+                setState(State.SAD);
+            }
+        }
     }
 
     @Override
@@ -105,6 +124,20 @@ public class Doge implements ISubject<IDogeObserver>, ITickerObserver {
         for (IDogeObserver observer : this.observers) {
             observer.onStateChange(newState);
         }
+    }
+
+    @Override
+    public void onPeriodChange(Period newPeriod) {
+        if (newPeriod == Period.DAY) {
+            setState(State.HAPPY);
+        }
+        else if (newPeriod == Period.NIGHT) {
+            setState(State.SLEEPING);
+        }
+    }
+
+    public void eat() {
+        setState(State.EATING);
     }
 
     /**
